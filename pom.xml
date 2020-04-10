@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        本工程是一个父类工程
+        数据库脚本在脑图中
+        github的配置文件在：git@github.com:SpikeNightWalker/microservicecloud-config2.git
+        -->
+    <groupId>com.atguigu.springcloud</groupId>
+    <artifactId>microservicecloud</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <modules>
+        <!--
+            实体类工程，服务类工程依赖它
+            里面还配了Feign的Service和Hystrix针对Dept的熔断类
+            老师虽然将Service层放在这里，但实际项目中不确定Service和熔断类是否应该放在这里
+         -->
+        <module>microservicecloud-api</module>
+        <!--
+            服务提供者，需要配数据源，且需要注册进Eureka
+         -->
+        <module>microservicecloud-provider-dept-8001</module>
+        <!-- 同上 -->
+        <module>microservicecloud-provider-dept-8002</module>
+        <!-- 同上 -->
+        <module>microservicecloud-provider-dept-8003</module>
+        <!--
+            消费者，配了Ribbon的客户端负载均衡
+            里面用了RestTemplate，实际应该使用Feign去调服务接口
+         -->
+        <module>microservicecloud-consumer-dept-80</module>
+        <!-- Eureka服务器 -->
+        <module>microservicecloud-eureka-7001</module>
+        <!-- Eureka服务器 -->
+        <module>microservicecloud-eureka-7002</module>
+        <!-- Eureka服务器 -->
+        <module>microservicecloud-eureka-7003</module>
+        <!--
+            使用api模块的Feign调用接口服务的消费者
+            里面没加Ribbon注解，因为只是为了演示Feign
+         -->
+        <module>microservicecloud-consumer-dept-feign</module>
+        <!--
+            开启了hystrix熔断的服务提供者
+         -->
+        <module>microservicecloud-provider-dept-hystrix-8001</module>
+        <!--
+            hystrixDashboard服务器
+            只能响应配了熔断的服务接口
+         -->
+        <module>microservicecloudconsumer-hystrix-dashboard</module>
+        <!--
+            zuul网关，配置了路由规则，隐藏了服务名
+            默认应该是通过轮询的方式请求服务集群
+         -->
+        <module>microservicecloud-zuul-gateway-9527</module>
+        <!-- config服务器，用于读取git上的配置文件 -->
+        <module>microservicecloud-config-3344</module>
+        <!-- 用于测试自动从3344服务器上获取git上配置文件的配置，并加载 -->
+        <module>microservicecloud-config-client-3355</module>
+        <!--
+            通过从3344服务器上获取git上配置文件的配置，并加载
+            这个是服务提供者
+            -->
+        <module>microservicecloud-config-dept-provider-8001</module>
+        <!--
+            通过从3344服务器上获取git上配置文件的配置，并加载
+            这个是消费者
+         -->
+        <module>microservicecloud-config-eureka-client-7001</module>
+    </modules>
+    <packaging>pom</packaging>
+
+    <build>
+        <finalName>microservicecloud</finalName>
+        <resources>
+            <resource>
+                <!-- 表示允许访问所有子模块中src/main/resources路径下的所有资源 -->
+                <directory>src/main/resources</directory>
+                <!-- 表示该功能开启 -->
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <!-- 该插件负责解析和解读 -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <delimiters>
+                        <!--
+                            能读取src/main/resources路径下的文件中，以$符号开头且以$符号结尾的占位符信息
+                            比如yml中的build.artifactId: $project.artifactId$
+                            注意，这里要用<delimiter>，不能用<delimit>
+                            -->
+                        <delimiter>$</delimiter>
+                    </delimiters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <junit.version>4.12</junit.version>
+        <log4j.version>1.2.17</log4j.version>
+        <lombok.version>1.16.18</lombok.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>Dalston.SR1</version>
+                <type>pom</type>
+                <!--
+                    实际开发中，用户很可能需要继承自己公司的标准parent配置，这个时候可以使用 scope=import 来实现多继承。
+                    import表示可以子模块除了继承我们自己的pom项目外，还能继承cloud的依赖
+                    -->
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>1.5.9.RELEASE</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>5.0.4</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid</artifactId>
+                <version>1.0.31</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter</artifactId>
+                <version>1.3.0</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>1.2.3</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
